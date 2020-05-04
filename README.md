@@ -1,4 +1,4 @@
-# Notebook [Terraform Course on LinkedIn Formation](https://www.linkedin.com/learning/learning-terraform-2)
+# Notes taken while following the course [Terraform Course on LinkedIn Formation](https://www.linkedin.com/learning/learning-terraform-2)
 
 ### Provider secret (AWS)
 
