@@ -9,7 +9,7 @@ Register your credential in a secret file stored in `~/.aws/`
      aws_access_key_id=secret
      aws_secret_access_key=secret
     ```
-## Exercise 1 : Deploying a resource (AWS S3 bucket)
+## Deploying a resource (AWS S3 bucket) (`bucket/` folder)
 ### Terraform code 
 `bucket.tf` where we specified the provider and resource configurations (aws and S3 bucket)
 
@@ -76,21 +76,70 @@ To apply the plan :
 
 ![applydestroyplan](notesScreens/tfapply-destroy.png)
 
+> If you use this plan it will go stale. That's why if you redeploy the bucket you will need to remake a plan for destroying the resource
+
 ## Terraform State
+
 
 Refers to two differents things:
 * The reality of your infrastructure. What is the state of the resouces on AWS ? Their IP addresses, their instance type, bucket name ... 
-* The local representation that Terraform keeps a `.tfstate` json file.
+* The local representation that Terraform keeps a state file `.tfstate` which has a json format
+  
+>It's entirely possible for those two to be out of sync, and Terraform doesn't know until it refreshes its local state.
 
->It's entirely possible for those two to be out of sync, and Terraform doesn't know until it refreshes its local state. 
+#### Local terraform state
+`.tfstate` after destroying, changing the bucket name in `bucket.tf`and applying it :
+![localstate](notesScreens/tfstate.png)
+
+#### Remote State Storage (using Terraform [Backend Feature](https://www.terraform.io/docs/backends/index.html))
+Terraform state can be stored remotely, Remote storage is something you'd have to set up if you were working on a team using a feature Terraform call [Backends](https://www.terraform.io/docs/backends/index.html). 
+
+Remote storage of state prevents a team from stomping on each other's changes and allows teams to do things like delegate and share resources. For example, you could allow some users read-only access to certain details of the infrastructure, but still let Terraform run as though it had full access, as long as it didn't change this. 
+
+#### Terraform state command (preferred way of investigating at terraform state)
+
+`terraform state`  
+
+ ##### Altering state
+
+Messing with the state and the state file is something to try to avoid at all cost. It is needed sometimes. Sometimes things can get just a little bit out of sync, and Terraform can't recover itself. But that is an advanced thing on a large infrastructure and messing with state shouldn't be done lightly.
+
+##### Read Only subcommands
+* `terraform state list` 
+    
+    List of types and names of resources provisioned :
+    ![tfstatelist](notesScreens/tfstate-list.png)
+
+* `terraform state list resourcename` 
+  
+  Dig in a little bit deeper on a specific resource :
+![tfstateshowresource](notesScreens/tfstate-show-resource.png)
 
 
+`terraform show` see the entire state file 
+`terraform show -json` will show a JSON representation of the state 
 
 
+### Terraform graph command 
 
 
+`terraform graph`
+![tfgraph](notesScreens/tfgraph.png)
 
+The syntax is known as DOT for DOT file (common way to defining graphs like this). To see it generate the graph visually, there is an open source webtool called : [WebGrpahViz](http://webgraphviz.com/)
 
+![webgraphvizGeneratedGraph](notesScreens/webgraphvizGeneratedGraph.png)
 
+This is the graph for our simple case of providing an S3 bucket.
+Nodes can be run in parrallel. 
+Diamonds shape are for providers.
 
+## Deploying a bucket, VPC,a SecurityGroup
 
+`prod/` -> create our infra -> `prod.tf`
+We have 3 resource a bucker, a VPC and a security group
+`terraform init` (check for `.tf` file and download plugins)
+`terraform plan` (showing the plan)
+`terraform apply` 
+
+![prodtfapply](notesScreens/prod-tfapply)
