@@ -4,6 +4,6 @@ provider "aws" {
 }
 
 resource "aws_s3_bucket" "tf_bucket" {
-  bucket = "s3-20200504" # unique name
+  bucket = "s3-20200505" # unique name
   acl    = "private"
 }
