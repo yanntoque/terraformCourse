@@ -60,10 +60,18 @@ resource "aws_instance" "prod_web" {
   }
 }
 
+/*
+Decoupling the creation of the IP and it's assigment
+*/
+resource "aws_eip_association" "prod_web" {
+  instance_id   = aws_instance.prod_web.id
+  allocation_id = aws_eip.prod_web.id 
+}
+
+  
+
 /*EIP*/
 resource "aws_eip" "prod_web" {
-  instance = aws_instance.prod_web.id
-  
   tags = {
     "Terraform" = "true"
   }
