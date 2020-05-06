@@ -134,12 +134,117 @@ This is the graph for our simple case of providing an S3 bucket.
 Nodes can be run in parrallel. 
 Diamonds shape are for providers.
 
-## Deploying a bucket, VPC,a SecurityGroup
+## Creating a bucket, nginx instance, VPC,a SecurityGroup, Elastic IP (`prod/` folder)
 
 `prod/` -> create our infra -> `prod.tf`
-We have 3 resource a bucker, a VPC and a security group
+We have 3 resources a bucket, a nginx instance, a VPC, a security group.
+
 `terraform init` (check for `.tf` file and download plugins)
 `terraform plan` (showing the plan)
-`terraform apply` 
+`terraform apply` creating our resource on AWS
+`terraform plan -destroy -out=destroy.plan` to delete resources
 
-![prodtfapply](notesScreens/prod-tfapply)
+
+`terraform plan` (showing the plan)
+`terraform apply` creating our resource on AWS
+
+![prodtfapply](notesScreens/tfapply-instance.png)
+
+At this step we have our nginx instance running :
+
+![nonstaticip](notesScreens/nonstaticIPnginxInstance.png)
+
+>The public IP set to the nginx instance is ephemeral, so if you spun this instance up again, it would most likely get a totally different IP.
+
+A single IP would be nicer, in order to do that add the AWS EIP (elastic IP) a static IP that can be reassigned.
+
+![prodtfapplyeip](notesScreens/prod-tfapply-eip.png)
+
+Once we set the static ip the ephemeral ip doesn't work : 
+
+![ephemaralip](notesScreens/ephemeralip.png)
+
+The static ip works : 
+![staticip](notesScreens/staticip.png)
+
+If the instance is destroyed and recreated the ip static ip will not change. 
+
+But when we ran the plan to destroy the instance, it shows that 2 resource will be deleted : 
+
+`terraform plan -destroy -target=aws_instance.prod_web -out=destroyInstance.plan`
+
+![eipwillbedestroyed](notesScreens/eipwillbedestroyed.png)
+![instancewillbedestroyed](notesScreens/instancewillbedestroyed.png)
+![2resourcesdestroyed](notesScreens/plandestroy2resources.png)
+
+The elastic ip is assigned right inside the definition :
+
+```
+/*EIP*/
+resource "aws_eip" "prod_web" {
+  instance = aws_instance.prod_web.id
+  
+  tags = {
+    "Terraform" = "true"
+  }
+}
+```
+
+The elastic ip depends on the instance as shown in the graph : `terraform graph | grep -v -e 'meta' -e 'close' -e 's3' -e 'vpc'` 
+
+![graphdependencyeipinstance](notesScreens/prod_grapeipinstancedirectlink.png)
+
+So the eip can't be created before the instance because it needs that instance data in order to be created.
+
+That's why it need to be modified, for example if we want to scale.
+
+```
+/*
+Decoupling the creation of the IP and it's assigment
+*/
+resource "aws_eip_association" "prod_web" {
+  instance_id   = aws_instance.prod_web.id
+  allocation_id = aws_eip.prod_web.id 
+}
+
+  
+
+/*EIP*/
+resource "aws_eip" "prod_web" {
+  tags = {
+    "Terraform" = "true"
+  }
+}
+```
+
+Decoupling the creation of the IP and it's assigment give this graph :
+
+![decoupledeipandinstance](notesScreens/webgraphvizGeneratedGraph.png)
+
+The eip provisoning is right after the provider, as the security group.
+
+And at the end there is the eip associated. 
+
+#### Scaling 
+
+`count = 2` added to instance resource def
+
+![eipasso](notesScreens/eipassociationwillbecreated.png)
+![secondinstance](notesScreens/secondinstancewillbecreated.png)
+![plan](notesScreens/plancreatingeipassoandsecondinstance.png)
+
+Applied :
+![apply](notesScreens/eipassociationscaleup.png)
+
+
+#### Loadbalancer 
+
+Add subnet and Elb: 
+
+![subnetazA](notesScreens/subnetazA.png)
+![subnetazB](notesScreens/subnetazB.png)
+![elb](notesScreens/elb.png)
+Applied :
+![apply](notesScreens/eipassociationscaleup.png)
+
+
