@@ -48,6 +48,8 @@ resource "aws_security_group" "prod_web" {
 instance with NGINX Open Source Certified by Bitnami subscription
 */
 resource "aws_instance" "prod_web" {
+  count = 2
+
   ami = "ami-0a0f02941b5882dd8"
   instance_type = "t2.nano"
 
@@ -62,9 +64,13 @@ resource "aws_instance" "prod_web" {
 
 /*
 Decoupling the creation of the IP and it's assigment
+Scaling : 
+syntax accepted  aws_instance.prod_web[0].id
+or aws_instance.prod_web.0.id
+ 
 */
 resource "aws_eip_association" "prod_web" {
-  instance_id   = aws_instance.prod_web.id
+  instance_id   = aws_instance.prod_web.0.id
   allocation_id = aws_eip.prod_web.id 
 }
 
