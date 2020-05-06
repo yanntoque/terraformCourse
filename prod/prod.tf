@@ -14,6 +14,21 @@ as our code will use networking and compute features we define a vpc*/
 resource "aws_default_vpc" "default" {
 }
 
+/*default subnets on per availability zone */
+resource "aws_default_subnet" "default_az1" {
+  availability_zone = "eu-west-3a"
+  tags = {
+      "Terraform" = "true"
+  }
+}
+
+resource "aws_default_subnet" "default_az2" {
+  availability_zone = "eu-west-3b"
+  tags = {
+      "Terraform" = "true"
+  }
+}
+
 resource "aws_security_group" "prod_web" {
   name        = "tf-prod-web"
   description = "Allows standard http and https ports inbound and everything outbound. This is for example purpose. In real case scenarii restrictions would be applied"
@@ -78,6 +93,26 @@ resource "aws_eip_association" "prod_web" {
 
 /*EIP*/
 resource "aws_eip" "prod_web" {
+  tags = {
+    "Terraform" = "true"
+  }
+}
+
+/*
+loadbalancer*/
+resource "aws_elb" "prod_web" {
+  name            = "prod-web"
+  instances       = aws_instance.prod_web.*.id
+  subnets         = [aws_default_subnet.default_az1.id, aws_default_subnet.default_az2.id ]
+  security_groups = [aws_security_group.prod_web.id]
+
+  listener{
+    instance_port     = 80
+    instance_protocol = "http"
+    lb_port           = 80
+    lb_protocol       = "http"
+  }
+  
   tags = {
     "Terraform" = "true"
   }
