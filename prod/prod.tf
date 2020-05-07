@@ -77,62 +77,19 @@ resource "aws_security_group" "prod_web" {
       "Terraform" = "true"
   }
 }
-
 /*
-loadbalancer*/
-resource "aws_elb" "prod_web" {
-  name            = "prod-web"
-  subnets         = [aws_default_subnet.default_az1.id,aws_default_subnet.default_az2.id]
-  security_groups = [aws_security_group.prod_web.id]
-
-  listener{
-    instance_port     = 80
-    instance_protocol = "http"
-    lb_port           = 80
-    lb_protocol       = "http"
-  }
+For the example tutorial we only have one "env" which is "prod"
+if we had multiple environment we would have created a directory per env
+*/
+module "web_app" {
+  source = "./modules/webapp"
   
-  tags = {
-    "Terraform" = "true"
-  }
-}
-
-/*Autoscaling group
-from https://www.terraform.io/docs/providers/aws/r/autoscaling_group.html*/
-resource "aws_launch_template" "prod_web" {
-  name_prefix   = "prod-web"
-  image_id      = var.web_image_id
-  instance_type = var.web_instance_type
-
-  tags = {
-    "Terraform" = "true"
-  }
-}
-/*
- vpc_zone_identifier A list of subnet IDs to launch resources in.
-*/
-resource "aws_autoscaling_group" "prod_web" {
-  availability_zones  = ["eu-west-3a","eu-west-3b"]
-  vpc_zone_identifier = [aws_default_subnet.default_az1.id,aws_default_subnet.default_az2.id]
-  desired_capacity    = var.web_desired_capacity
-  max_size            = var.web_max_size
-  min_size            = var.web_min_size
-
-  launch_template {
-    id      = aws_launch_template.prod_web.id
-    version = "$Latest"
-  }
-
-  tag {
-      key                 = "Terraform"
-      value               = "true"
-      propagate_at_launch = true
-  }
-}
-/**
-To connect the elb to the autoscaling group
-*/
-resource "aws_autoscaling_attachment" "prod_web" {
-  autoscaling_group_name = aws_autoscaling_group.prod_web.id
-  elb                    = aws_elb.prod_web.id
+  web_image_id         = var.web_image_id
+  web_instance_type    = var.web_instance_type
+  web_desired_capacity = var.web_desired_capacity
+  web_max_size         = var.web_max_size
+  web_min_size         = var.web_min_size
+  subnets              = [aws_default_subnet.default_az1.id,aws_default_subnet.default_az2.id]
+  security_groups      = [aws_security_group.prod_web.id]
+  web_app              ="prod"
 }
