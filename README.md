@@ -248,3 +248,13 @@ Applied :
 ![apply](notesScreens/eipassociationscaleup.png)
 
 
+#### Autoscaling group
+
+Adding a template from https://www.terraform.io/docs/providers/aws/r/autoscaling_group.html and adapting it to our code.
+
+after creating the vpc and subnets, creation of the elb and autoscaling group:
+![elb](notesScreens/elb.png)
+![a](notesScreens/applysubnetandelb.png)
+## Modules
+
+After writing module run `terraform init`
